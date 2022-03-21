@@ -1,0 +1,51 @@
+version: '3.3'
+
+services:
+
+  node:
+    build:
+      context: .
+      dockerfile: node.dockerfile
+    container_name: node
+    stdin_open: true
+    ports:
+      - 3000:3000
+    networks:
+      - node_python_net
+
+  python:
+    build:
+      context: .
+      dockerfile: python.dockerfile
+    container_name: python
+    ports:
+      - 8000:8000
+    networks:
+      - node_python_net
+      - python_pg_net
+    depends_on:
+      database:
+        condition: service_healthy
+
+  database:
+    image: postgres
+    container_name: postgres
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_DB=django
+      - POSTGRES_USER=django
+      - POSTGRES_PASSWORD=django
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U django"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - python_pg_net
+
+networks:
+  node_python_net:
+    driver: bridge
+  python_pg_net:
+    driver: bridge
